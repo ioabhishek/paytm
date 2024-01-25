@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import User from "../models/user.model.js"
 import createError from "../utils/createError.js"
 import { signupBody, loginBody, updateBody } from "../validator/validator.js"
+import Account from "../models/account.model.js"
 
 export const signup = async (req, res, next) => {
   try {
@@ -24,10 +25,16 @@ export const signup = async (req, res, next) => {
     })
 
     const user = await newUser.save()
+    const userId = user._id
+
+    await Account.create({
+      userId,
+      balance: 1 + Math.random() * 10000,
+    })
 
     const token = jwt.sign(
       {
-        userId: user._id,
+        userId: userId,
       },
       process.env.JWT_SECRET
     )
