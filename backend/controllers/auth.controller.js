@@ -1,27 +1,8 @@
+import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import User from "../models/user.model.js"
 import createError from "../utils/createError.js"
-import zod from "zod"
-import bcrypt from "bcrypt"
-import mongoose from "mongoose"
-
-const signupBody = zod.object({
-  username: zod.string().email(),
-  firstName: zod.string(),
-  lastName: zod.string(),
-  password: zod.string(),
-})
-
-const loginBody = zod.object({
-  username: zod.string().email(),
-  password: zod.string(),
-})
-
-const updateBody = zod.object({
-  password: zod.string().optional(),
-  firstName: zod.string().optional(),
-  lastName: zod.string().optional(),
-})
+import { signupBody, loginBody, updateBody } from "../validator/validator.js"
 
 export const signup = async (req, res, next) => {
   try {
@@ -94,12 +75,36 @@ export const login = async (req, res, next) => {
 export const update = async (req, res, next) => {
   try {
     const { success } = updateBody.safeParse(req.body)
-    if (!success) return next(createError(400, "Invalid input"))
+    if (!success)
+      return next(createError(400, "Error while updating information"))
 
-    await User.findByIdAndUpdate(req.body, {
-      _id: req.userId,
-    })
+    const hash = bcrypt.hashSync(req.body.password, 5)
+    const bodyy = { ...req.body, password: hash }
+
+    await User.findByIdAndUpdate(req.userId, bodyy)
+
     res.status(200).send({ message: "Updated successfully" })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const bulk = async (req, res, next) => {
+  const filter = req.query.filter || ""
+  try {
+    const users = await User.find({
+      $or: [
+        { firstName: { $regex: filter, $options: "i" } },
+        { lastName: { $regex: filter, $options: "i" } },
+      ],
+    })
+    res.status(200).send({
+      user: users.map((user) => ({
+        firstName: user.firstName,
+        lastName: user.lastName,
+        _id: user._id,
+      })),
+    })
   } catch (error) {
     next(error)
   }
