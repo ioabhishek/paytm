@@ -2,6 +2,7 @@ import express from "express"
 import mongoose from "mongoose"
 import dotenv from "dotenv"
 import authRoute from "./routes/auth.route.js"
+import accountRoute from "./routes/account.route.js"
 import cookieParser from "cookie-parser"
 import cors from "cors"
 
@@ -25,6 +26,7 @@ app.use(cors())
 app.use(cookieParser())
 
 app.use("/api/v1/auth", authRoute)
+app.use("/api/v1/account", accountRoute)
 
 app.use((err, req, res, next) => {
   const errorStatus = err.status || 500
